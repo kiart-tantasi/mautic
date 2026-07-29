@@ -5,7 +5,7 @@ namespace Mautic\UserBundle\Event;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class AuthenticationContentEvent extends Event
+final class AuthenticationContentEvent extends Event
 {
     /**
      * @var array
@@ -23,10 +23,7 @@ class AuthenticationContentEvent extends Event
         $this->postLogout = $request->getSession()->get('post_logout', false);
     }
 
-    /**
-     * @return Request
-     */
-    public function getRequest()
+    public function getRequest(): Request
     {
         return $this->request;
     }

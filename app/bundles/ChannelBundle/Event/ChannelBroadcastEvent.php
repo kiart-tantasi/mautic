@@ -5,7 +5,7 @@ namespace Mautic\ChannelBundle\Event;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class ChannelBroadcastEvent extends Event
+final class ChannelBroadcastEvent extends Event
 {
     /**
      * Number of contacts successfully processed and/or failed per channel.
@@ -17,14 +17,14 @@ class ChannelBroadcastEvent extends Event
     /**
      * Min contact ID filter can be used for process parallelization.
      *
-     * @var int
+     * @var int|null
      */
     private $minContactIdFilter;
 
     /**
      * Max contact ID filter can be used for process parallelization.
      *
-     * @var int
+     * @var int|null
      */
     private $maxContactIdFilter;
 
@@ -55,18 +55,12 @@ class ChannelBroadcastEvent extends Event
     ) {
     }
 
-    /**
-     * @return mixed
-     */
-    public function getChannel()
+    public function getChannel(): ?string
     {
         return $this->channel;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getId()
+    public function getId(): string|int|null
     {
         return $this->id;
     }
@@ -102,10 +96,7 @@ class ChannelBroadcastEvent extends Event
         return true;
     }
 
-    /**
-     * @return OutputInterface
-     */
-    public function getOutput()
+    public function getOutput(): OutputInterface
     {
         return $this->output;
     }
@@ -142,10 +133,7 @@ class ChannelBroadcastEvent extends Event
         return $this->maxContactIdFilter;
     }
 
-    /**
-     * @param int $limit
-     */
-    public function setLimit($limit): void
+    public function setLimit(int $limit): void
     {
         $this->limit = $limit;
     }
@@ -155,10 +143,7 @@ class ChannelBroadcastEvent extends Event
         return $this->limit;
     }
 
-    /**
-     * @param int $batch
-     */
-    public function setBatch($batch): void
+    public function setBatch(int $batch): void
     {
         $this->batch = $batch;
     }

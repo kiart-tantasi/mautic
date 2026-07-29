@@ -6,7 +6,7 @@ use Symfony\Component\Config\Loader\Loader;
 use Symfony\Component\Routing\RouteCollection;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class RouteEvent extends Event
+final class RouteEvent extends Event
 {
     protected RouteCollection $collection;
 
@@ -28,10 +28,7 @@ class RouteEvent extends Event
         $this->collection->addCollection($this->loader->import($path));
     }
 
-    /**
-     * @return RouteCollection
-     */
-    public function getCollection()
+    public function getCollection(): RouteCollection
     {
         return $this->collection;
     }

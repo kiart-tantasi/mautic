@@ -4,7 +4,7 @@ namespace Mautic\LeadBundle\Event;
 
 use Mautic\CoreBundle\Event\CommonEvent;
 
-class ListPreProcessListEvent extends CommonEvent
+final class ListPreProcessListEvent extends CommonEvent
 {
     protected $result;
 
@@ -20,10 +20,8 @@ class ListPreProcessListEvent extends CommonEvent
 
     /**
      * Returns the List entity.
-     *
-     * @return array
      */
-    public function getList()
+    public function getList(): array
     {
         return $this->list;
     }
@@ -44,10 +42,7 @@ class ListPreProcessListEvent extends CommonEvent
         return $this->result;
     }
 
-    /**
-     * @return $this
-     */
-    public function setResult($result)
+    public function setResult($result): static
     {
         $this->result = $result;
 

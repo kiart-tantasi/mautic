@@ -5,9 +5,10 @@ namespace Mautic\CoreBundle\Event;
 use Mautic\CoreBundle\Translation\Translator;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class GlobalSearchEvent extends Event
+final class GlobalSearchEvent extends Event
 {
     public const RESULTS_LIMIT = 3;
+
     /**
      * @var array
      */
@@ -54,7 +55,7 @@ class GlobalSearchEvent extends Event
      */
     public function getResults()
     {
-        uksort($this->results, 'strnatcmp');
+        uksort($this->results, strnatcmp(...));
 
         return $this->results;
     }

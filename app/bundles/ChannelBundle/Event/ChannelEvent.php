@@ -5,7 +5,7 @@ namespace Mautic\ChannelBundle\Event;
 use Mautic\ChannelBundle\Model\MessageModel;
 use Mautic\CoreBundle\Event\CommonEvent;
 
-class ChannelEvent extends CommonEvent
+final class ChannelEvent extends CommonEvent
 {
     /**
      * @var array
@@ -32,10 +32,8 @@ class ChannelEvent extends CommonEvent
      *
      *                          ]
      *                       ]
-     *
-     * @return $this
      */
-    public function addChannel($channel, array $config = [])
+    public function addChannel($channel, array $config = []): static
     {
         $this->channels[$channel] = $config;
 

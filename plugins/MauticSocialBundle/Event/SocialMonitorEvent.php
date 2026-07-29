@@ -5,7 +5,7 @@ namespace MauticPlugin\MauticSocialBundle\Event;
 use Mautic\CoreBundle\Event\CommonEvent;
 use MauticPlugin\MauticSocialBundle\Entity\Monitoring;
 
-class SocialMonitorEvent extends CommonEvent
+final class SocialMonitorEvent extends CommonEvent
 {
     protected int $newLeadCount;
 
@@ -59,10 +59,7 @@ class SocialMonitorEvent extends CommonEvent
         return $this->updatedLeadCount + $this->newLeadCount;
     }
 
-    /**
-     * @return array
-     */
-    public function getLeadIds()
+    public function getLeadIds(): array
     {
         return $this->leadIds;
     }

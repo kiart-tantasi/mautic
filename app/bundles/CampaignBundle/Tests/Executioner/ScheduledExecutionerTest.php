@@ -15,6 +15,7 @@ use Mautic\CampaignBundle\Executioner\ContactFinder\Limiter\ContactLimiter;
 use Mautic\CampaignBundle\Executioner\ContactFinder\ScheduledContactFinder;
 use Mautic\CampaignBundle\Executioner\EventExecutioner;
 use Mautic\CampaignBundle\Executioner\Helper\EventRedirectionHelper;
+use Mautic\CampaignBundle\Executioner\Result\Counter;
 use Mautic\CampaignBundle\Executioner\ScheduledExecutioner;
 use Mautic\CampaignBundle\Executioner\Scheduler\EventScheduler;
 use Mautic\CoreBundle\ProcessSignal\ProcessSignalService;
@@ -25,11 +26,11 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 use Symfony\Component\Console\Output\BufferedOutput;
 
-class ScheduledExecutionerTest extends TestCase
+final class ScheduledExecutionerTest extends TestCase
 {
     private MockObject&LeadEventLogRepository $repository;
 
-    private MockObject&Translator $translator;
+    private \PHPUnit\Framework\MockObject\Stub&Translator $translator;
 
     private MockObject&EventExecutioner $executioner;
 
@@ -37,29 +38,29 @@ class ScheduledExecutionerTest extends TestCase
 
     private MockObject&ScheduledContactFinder $contactFinder;
 
-    private MockObject&ProcessSignalService $processSignalService;
+    private \PHPUnit\Framework\MockObject\Stub&ProcessSignalService $processSignalService;
 
     private MockObject&EventRedirectionHelper $redirectionHelper;
 
-    private MockObject&EntityManagerInterface $entityManager;
+    private \PHPUnit\Framework\MockObject\Stub&EntityManagerInterface $entityManager;
 
-    private MockObject&LeadRepository $leadRepository;
+    private \PHPUnit\Framework\MockObject\Stub&LeadRepository $leadRepository;
 
     protected function setUp(): void
     {
         $this->repository           = $this->createMock(LeadEventLogRepository::class);
-        $this->translator           = $this->createMock(Translator::class);
+        $this->translator           = $this->createStub(Translator::class);
         $this->executioner          = $this->createMock(EventExecutioner::class);
         $this->scheduler            = $this->createMock(EventScheduler::class);
         $this->contactFinder        = $this->createMock(ScheduledContactFinder::class);
-        $this->processSignalService = $this->createMock(ProcessSignalService::class);
+        $this->processSignalService = $this->createStub(ProcessSignalService::class);
         $this->redirectionHelper    = $this->createMock(EventRedirectionHelper::class);
-        $this->entityManager        = $this->createMock(EntityManagerInterface::class);
-        $this->leadRepository       = $this->createMock(LeadRepository::class);
+        $this->entityManager        = $this->createStub(EntityManagerInterface::class);
+        $this->leadRepository       = $this->createStub(LeadRepository::class);
 
         // Configure the redirection helper mock to return the event it receives
         $this->redirectionHelper->method('handleEventRedirection')
-            ->willReturnCallback(fn (Event $event) => $event);
+            ->willReturnCallback(fn (Event $event): Event => $event);
     }
 
     public function testNoEventsResultInEmptyResults(): void
@@ -71,11 +72,12 @@ class ScheduledExecutionerTest extends TestCase
         $this->repository->expects($this->never())
             ->method('getScheduled');
 
-        $campaign = $this->createMock(Campaign::class);
+        $campaign = $this->createStub(Campaign::class);
 
         $limiter = new ContactLimiter(0, 0, 0, 0);
 
         $counter = $this->getExecutioner()->execute($campaign, $limiter, new BufferedOutput());
+        $this->assertInstanceOf(Counter::class, $counter);
 
         $this->assertEquals(0, $counter->getTotalEvaluated());
     }
@@ -149,6 +151,7 @@ class ScheduledExecutionerTest extends TestCase
             ->method('hydrateContacts');
 
         $counter = $this->getExecutioner()->executeByIds([1, 2]);
+        $this->assertInstanceOf(Counter::class, $counter);
 
         // Two events were evaluated
         $this->assertEquals(2, $counter->getTotalEvaluated());
@@ -223,10 +226,98 @@ class ScheduledExecutionerTest extends TestCase
             ->method('hydrateContacts');
 
         $counter = $this->getExecutioner()->executeByIds([1, 2]);
+        $this->assertInstanceOf(Counter::class, $counter);
 
         // Two events were evaluated but not executed because campaign was unpublished
         $this->assertEquals(2, $counter->getTotalEvaluated());
         $this->assertEquals(0, $counter->getTotalExecuted());
+    }
+
+    public function testBatchCursorAdvancesToHighestContactIdPlusOne(): void
+    {
+        $campaign = $this->createMock(Campaign::class);
+        $campaign->method('isPublished')
+            ->willReturn(true);
+        $campaign->method('getId')
+            ->willReturn(1);
+
+        $event = $this->createMock(Event::class);
+        $event->method('getId')
+            ->willReturn(1);
+        $event->method('getCampaign')
+            ->willReturn($campaign);
+
+        $lead5 = $this->createMock(Lead::class);
+        $lead5->method('getId')
+            ->willReturn(5);
+
+        $lead10 = $this->createMock(Lead::class);
+        $lead10->method('getId')
+            ->willReturn(10);
+
+        $log1 = $this->createMock(LeadEventLog::class);
+        $log1->method('getId')
+            ->willReturn(1);
+        $log1->method('getEvent')
+            ->willReturn($event);
+        $log1->method('getCampaign')
+            ->willReturn($campaign);
+        $log1->method('getLead')
+            ->willReturn($lead5);
+        $log1->method('getDateTriggered')
+            ->willReturn(new \DateTime());
+        $log1->method('getRotation')
+            ->willReturn(1);
+
+        $log2 = $this->createMock(LeadEventLog::class);
+        $log2->method('getId')
+            ->willReturn(2);
+        $log2->method('getEvent')
+            ->willReturn($event);
+        $log2->method('getCampaign')
+            ->willReturn($campaign);
+        $log2->method('getLead')
+            ->willReturn($lead10);
+        $log2->method('getDateTriggered')
+            ->willReturn(new \DateTime());
+        $log2->method('getRotation')
+            ->willReturn(1);
+
+        $logs = new ArrayCollection([1 => $log1, 2 => $log2]);
+
+        $this->repository->expects($this->once())
+            ->method('getScheduledCounts')
+            ->willReturn([1 => 2]);
+
+        $callCount            = 0;
+        $capturedMinContactId = null;
+        $this->repository->expects($this->exactly(2))
+            ->method('getScheduled')
+            ->willReturnCallback(function ($_eventId, $_now, ContactLimiter $limiter) use ($logs, &$callCount, &$capturedMinContactId) {
+                ++$callCount;
+                if (1 === $callCount) {
+                    return $logs;
+                }
+                $capturedMinContactId = $limiter->getMinContactId();
+
+                return new ArrayCollection();
+            });
+
+        $this->scheduler->method('validateExecutionDateTime')
+            ->willReturn(new \DateTime('-1 hour'));
+
+        $this->scheduler->method('shouldSchedule')
+            ->willReturn(false);
+
+        $this->contactFinder->method('hydrateContacts')
+            ->willReturn(new ArrayCollection());
+
+        $limiter = new ContactLimiter(100);
+
+        $this->getExecutioner()->execute($campaign, $limiter, new BufferedOutput());
+
+        // The second getScheduled call must start after the highest contact ID in the batch (10 + 1 = 11).
+        $this->assertSame(11, $capturedMinContactId);
     }
 
     private function getExecutioner(): ScheduledExecutioner

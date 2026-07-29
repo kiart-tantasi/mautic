@@ -4,7 +4,7 @@ namespace Mautic\CoreBundle\Event;
 
 use Symfony\Contracts\EventDispatcher\Event;
 
-class CustomContentEvent extends Event
+final class CustomContentEvent extends Event
 {
     /**
      * @var array
@@ -73,10 +73,7 @@ class CustomContentEvent extends Event
         return $this->context;
     }
 
-    /**
-     * @return array
-     */
-    public function getVars()
+    public function getVars(): array
     {
         return $this->vars;
     }

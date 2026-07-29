@@ -5,7 +5,7 @@ namespace Mautic\CoreBundle\Event;
 use Mautic\CoreBundle\Security\Permissions\CorePermissions;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class IconEvent extends Event
+final class IconEvent extends Event
 {
     /**
      * @var array
@@ -17,10 +17,7 @@ class IconEvent extends Event
     ) {
     }
 
-    /**
-     * @return CorePermissions
-     */
-    public function getSecurity()
+    public function getSecurity(): CorePermissions
     {
         return $this->security;
     }

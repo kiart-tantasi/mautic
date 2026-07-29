@@ -5,7 +5,7 @@ namespace Mautic\CampaignBundle\Event;
 use Mautic\CampaignBundle\Entity\Campaign;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class CampaignTriggerEvent extends Event
+final class CampaignTriggerEvent extends Event
 {
     /**
      * @var bool
@@ -19,10 +19,8 @@ class CampaignTriggerEvent extends Event
 
     /**
      * Returns the Campaign entity.
-     *
-     * @return Campaign
      */
-    public function getCampaign()
+    public function getCampaign(): Campaign
     {
         return $this->campaign;
     }

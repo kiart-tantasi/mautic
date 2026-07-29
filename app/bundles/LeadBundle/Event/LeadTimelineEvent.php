@@ -7,7 +7,7 @@ use Mautic\CoreBundle\Helper\DateTimeHelper;
 use Mautic\LeadBundle\Entity\Lead;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class LeadTimelineEvent extends Event
+final class LeadTimelineEvent extends Event
 {
     /**
      * Container with all filtered events.
@@ -151,7 +151,7 @@ class LeadTimelineEvent extends Event
                 $this->events[$data['event']] = [];
             }
 
-            if (!$this->isForTimeline()) {
+            if (!$this->forTimeline) {
                 // standardize the payload
                 $keepThese = [
                     'event'      => true,
@@ -201,7 +201,7 @@ class LeadTimelineEvent extends Event
             return [];
         }
 
-        $events = call_user_func_array('array_merge', array_values($this->events));
+        $events = call_user_func_array(array_merge(...), array_values($this->events));
 
         foreach ($events as &$e) {
             if (!$e['timestamp'] instanceof \DateTime) {
@@ -214,7 +214,7 @@ class LeadTimelineEvent extends Event
         if (!empty($this->orderBy)) {
             usort(
                 $events,
-                function ($a, $b) {
+                function (array $a, array $b) {
                     switch ($this->orderBy[0]) {
                         case 'eventLabel':
                             $aLabel = '';
@@ -252,10 +252,8 @@ class LeadTimelineEvent extends Event
 
     /**
      * Get the max number of pages for pagination.
-     *
-     * @return float|int
      */
-    public function getMaxPage()
+    public function getMaxPage(): int|float
     {
         if (!$this->totalEvents) {
             return 1;
@@ -303,10 +301,8 @@ class LeadTimelineEvent extends Event
 
     /**
      * Fetch the order for queries.
-     *
-     * @return array|null
      */
-    public function getEventOrder()
+    public function getEventOrder(): ?array
     {
         return $this->orderBy;
     }
@@ -342,10 +338,8 @@ class LeadTimelineEvent extends Event
 
     /**
      * Fetches the lead being acted on.
-     *
-     * @return Lead
      */
-    public function getLead()
+    public function getLead(): ?Lead
     {
         return $this->lead;
     }
@@ -451,7 +445,7 @@ class LeadTimelineEvent extends Event
         if (is_array($count)) {
             if (isset($count['total'])) {
                 $this->totalEvents[$eventType] += $count['total'];
-            } elseif ($this->isEngagementCount() && $this->groupUnit) {
+            } elseif ($this->countOnly && $this->groupUnit) {
                 // Group counts across events by unit
                 foreach ($count as $key => $data) {
                     if (!isset($this->totalEventsByUnit[$key])) {
@@ -471,7 +465,7 @@ class LeadTimelineEvent extends Event
     /**
      * Subtract from the total counter if there is an event that was skipped for whatever reason.
      */
-    public function subtractFromCounter($eventType, $count = 1): void
+    public function subtractFromCounter(string $eventType, $count = 1): void
     {
         $this->totalEvents[$eventType] -= $count;
     }
